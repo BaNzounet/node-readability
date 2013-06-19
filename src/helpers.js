@@ -10,7 +10,9 @@ var regexps = {
   trimRe: /^\s+|\s+$/g,
   normalizeRe: /\s{2,}/g,
   killBreaksRe: /(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,
-  videoRe: /http:\/\/(www\.)?(youtube|vimeo|youku|tudou|56|yinyuetai)\.com/i
+  videoRe: /http:\/\/(www\.)?(youtube|vimeo|youku|tudou|56|yinyuetai)\.com/i,
+  bannedWebsite: /\/(youtube|vimeo|youku|tudou|56|yinyuetai|spotify|pic.twitter|twitpic|instagram|path|firstpersontetris|foursquare|facebook|eventbrite|meetup)\.com/i,
+  bannedExtention: /.\/(jpg|jpeg|gif|pdf|torrent|exe|zip|rar|png|mp3|wmv|pkg|deb|7zip|tar|gzip)\ /i
 };
 
 var dbg;
@@ -72,7 +74,37 @@ var prepDocument = module.exports.prepDocument = function (document) {
   document.body.innerHTML = document.body.innerHTML.replace(regexps.replaceBrsRe, '</p><p>').replace(regexps.replaceFontsRe, '<$1span>')
 }
 
-/***
+/**
+ * isBannedWebsite - Using a variety of website/extention to know if the website is relevant or not
+ *
+ *
+ * @return Boolean
+ **/
+var isBannedWebsite = module.exports.isBannedWebsite = function(url) {
+  if (typeof url === 'undefined') return false;
+  if (url.search(regexps.bannedWebsite)) return true;
+  if (url.search(regexps.bannedExtention)) return true;
+  else return false;
+}
+
+/**
+ * grabImage - Parsing all the meta tag to find one with an image as content
+ * <meta property="og:image" content=""/>
+ *
+ *  @return URL (of an image)
+ **/
+var grabImage = module.exports.grabImage = function (document) {
+  var metas = document.getElementsByTagName('meta');
+  for (var i = 0; i < metas.length; ++i) {
+    var url =  metas[i].content;
+    if(url && (url.search(".jpg") != -1 || url.search(".png") != -1 || url.search(".jepg") != -1)) {
+      return url;
+    }
+  }
+  return 'null';
+}
+
+/**
  * grabArticle - Using a variety of metrics (content score, classname, element types), find the content that is
  *               most likely to be the stuff a user wants to read. Then return it wrapped up in a div.
  *

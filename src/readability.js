@@ -23,6 +23,10 @@ function Readability(document) {
   };
 }
 
+Readability.prototype.getImage = function () {
+  return helpers.grabImage(this._document);
+}
+
 Readability.prototype.getContent = function () {
   if (typeof this.cache['article-content'] !== 'undefined') {
     return this.cache['article-content'];
@@ -44,25 +48,33 @@ Readability.prototype.getTitle = function () {
   if (typeof this.cache['article-title'] !== 'undefined') {
     return this.cache['article-title'];
   }
-
   var title = this._document.title;
   var betterTitle;
   var commonSeparatingCharacters = [' | ', ' _ ', ' - ', '«', '»', '—'];
+  var bestTitle = "";
 
   var self = this;
   commonSeparatingCharacters.forEach(function (char) {
     var tmpArray = title.split(char);
     if (tmpArray.length > 1) {
-      if (betterTitle) return self.cache['article-title'] = title;
+      if (betterTitle) bestTitle = title;
       betterTitle = tmpArray[0].trim();
     }
   });
 
-  if (betterTitle && betterTitle.length > 10) {
-    return this.cache['article-title'] = betterTitle;
+  if (betterTitle && betterTitle.length > 10 && betterTitle.length > bestTitle.length ) {
+    bestTitle = betterTitle;
   }
 
-  return this.cache['article-title'] = title;
+  var tmpTitle = "";
+  var h1Array = this._document.getElementsByTagName("h1");
+  for (var i = h1Array.length - 1; i >= 0; i--) {
+    if(h1Array[i]["textContent"].length > tmpTitle.length)
+        tmpTitle = h1Array[i]["textContent"];
+  };
+  if(tmpTitle.length > bestTitle.length) bestTitle = tmpTitle;
+
+  return this.cache['article-title'] = bestTitle;
 };
 
 Readability.prototype.getDocument = function () {
@@ -88,6 +100,10 @@ function read(html, options, callback) {
   function jsdomParse(error, meta, body) {
     if (error) {
       return callback(error);
+    }
+
+    if(helpers.isBannedWebsite()) {
+      callback("This website is banned!")
     }
 
     if (typeof body !== 'string') body = body.toString();
